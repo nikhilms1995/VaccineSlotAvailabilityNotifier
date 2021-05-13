@@ -5,10 +5,9 @@ import smtplib
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 
-
-currentDateTime = date.today() + timedelta(days=5)
+currentDateTime = date.today() + timedelta(days=3)
 Odate = currentDateTime.strftime("%d")+"-"+currentDateTime.strftime("%m")+"-"+currentDateTime.strftime("%Y") #Needs to be in the format DD-MM-YYYY
-OdistrictCode = "266"  #Find your district code based on the state code from the Cowin GetDistrictCode API 
+OdistrictCode = "287"  #Find your district code from the Cowin API Setu
 slotAvailability = False
 
 ##Send email
@@ -24,12 +23,13 @@ message['Subject'] = 'ATTENTION: Vaccination Slot Available!'   #The subject lin
 mailBody = "Hello, Slots have opened up for the 18+ age category in your district.\n"
 response = requests.get("https://cdn-api.co-vin.in/api/v2/appointment/sessions/public/calendarByDistrict?district_id="+OdistrictCode+"&date="+Odate,
 headers={'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_10_1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/39.0.2171.95 Safari/537.36'}) #Do not modify the headers
+statusCode = response.status_code
 sessionsDictionary = json.loads(json.dumps(response.json()))
 sessionCount = (len(sessionsDictionary["centers"]))
 for i in range(len(sessionsDictionary["centers"])):
     for j in range(len(sessionsDictionary["centers"][i]["sessions"])):
-        if sessionsDictionary["centers"][i]["sessions"][j]["min_age_limit"] == 18 and sessionsDictionary["centers"][i]["sessions"][j]["available_capacity"] > 0:
-            mailBody = mailBody +"\n"+ sessionsDictionary["centers"][i]["name"]+ '\n' + "Available Count : " + str(sessionsDictionary["centers"][i]["sessions"][j]["available_capacity"]) + '\n\n'
+        if sessionsDictionary["centers"][i]["sessions"][j]["min_age_limit"] == 45 and sessionsDictionary["centers"][i]["sessions"][j]["available_capacity"] > 0:
+            mailBody = mailBody +"\n"+ sessionsDictionary["centers"][i]["name"]+ '\n' + "Date : " + sessionsDictionary["centers"][i]["sessions"][j]["date"]+"\n" +"Available Count : " + str(sessionsDictionary["centers"][i]["sessions"][j]["available_capacity"]) + '\n\n'
             slotAvailability = True
 
 
@@ -38,11 +38,12 @@ if slotAvailability == True:
     message.attach(MIMEText(mailBody, 'plain'))
     session = smtplib.SMTP('smtp.gmail.com', 587) #use gmail with port
     session.starttls() #enable security
-    session.login(senderAddress, senderPassword) #login with e-mail and password
+    session.login(senderAddress, senderPassword) #login with mail_id and password
     text = message.as_string()
     session.sendmail(senderAddress, receiverAddress, text)
     session.quit()
-    print('Slots available. E-mail has been sent with the details.')
+    print("Status Code: "+ str(statusCode)+ ". Slots available. Check email for details.")
+    
 else:
-    print('Sorry! No slots available at the moment.')
+    print("Status Code: "+ str(statusCode) + ". Sorry! No slots available")
     
